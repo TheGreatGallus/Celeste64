@@ -260,6 +260,8 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		World.Camera.Position = orig;
 	}
 
+	bool keyReleased = true;
+	Vector2[] PresetAngles = new Vector2[5] { new Vector2(0, 1), new Vector2(1, 0), new Vector2(0, -1), new Vector2(-1, 0), new Vector2(0, 1) };
 	public override void Update()
 	{
 		// only update camera if not dead
@@ -269,12 +271,58 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			// Rotate Camera
 			{
 				var invertX = Save.Instance.InvertCamera == Save.InvertCameraOptions.X || Save.Instance.InvertCamera == Save.InvertCameraOptions.Both;
-				var rot = new Vec2(cameraTargetForward.X, cameraTargetForward.Y).Angle();
-				rot -= Controls.Camera.Value.X * Time.Delta * 4 * (invertX ? -1 : 1);
+				var angle = new Vec2(cameraTargetForward.X, cameraTargetForward.Y);
+                var rot = new Vec2(cameraTargetForward.X, cameraTargetForward.Y).Angle();
+				// TODO: Lock this to fixed 90 degrees
+				if (keyReleased == true && Controls.Camera.Value.X != 0)
+				{
+					if (Math.Abs(angle.X) < 0.001)
+						angle.X = 0;
+                    if (Math.Abs(angle.Y) < 0.001)
+                        angle.Y = 0;
 
-				var angle = Calc.AngleToVector(rot);
+                    keyReleased = false;
+					bool changedAngle = false;
+					if (Controls.Camera.Value.X / Math.Abs(Controls.Camera.Value.X) * (invertX ? -1 : 1) > 0)
+					{
+						for(int i = 0; i < PresetAngles.Length-1; i++)
+						{
+							if (PresetAngles[i].X == angle.X && PresetAngles[i].Y == angle.Y)
+							{
+								angle = PresetAngles[i+1];
+								changedAngle = true;
+								break;
+							}
+						}
+					}
+                    else
+                    {
+                        for (int i = PresetAngles.Length - 1; i > 0 ; i--)
+                        {
+                            if (PresetAngles[i].X == angle.X && PresetAngles[i].Y == angle.Y)
+                            {
+                                angle = PresetAngles[i - 1];
+								changedAngle = true;
+                                break;
+                            }
+                        }
+                    }
+					if(!changedAngle)
+					{
+                        angle = PresetAngles[0];
+                    }
+                    
+                }
+				else
+				{
+					if (Controls.Camera.Value.X == 0)
+						keyReleased = true;
+				}
+
+				//var angle = Calc.AngleToVector(rot);
 				cameraTargetForward = new(angle, 0);
-			}
+
+            }
 
 			// Move Camera in / out
 			if (Controls.Camera.Value.Y != 0)
@@ -474,7 +522,8 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				GetCameraTarget(out lookAt, out cameraPos, out _);
 			}
 			
-            World.Camera.Position += (cameraPos - World.Camera.Position) * (1 - MathF.Pow(0.01f, Time.Delta));
+            World.Camera.Position += (cameraPos - World.Camera.Position);
+            //World.Camera.Position += (cameraPos - World.Camera.Position) * (1 - MathF.Pow(0.01f, Time.Delta));
             World.Camera.LookAt = lookAt;
 
 			float targetFOV = Calc.ClampedMap(velocity.XY().Length(), MaxSpeed * 1.2f, 120, 1, 1.2f);
@@ -543,6 +592,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	
 	public void GetCameraTarget(out Vec3 cameraLookAt, out Vec3 cameraPosition, out bool snapRequested)
 	{
+		// TODO: Camera things
 		snapRequested = false;
 
 		// get default values
@@ -563,30 +613,30 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		// try to push out of solids if we're in them
 		else
 		{
-			var from = cameraLookAt;// - Vec3.UnitZ * (onGround ? 0 : 6);
-			var to = cameraPosition;
-			var normal = (to - from).Normalized();
+			//var from = cameraLookAt;// - Vec3.UnitZ * (onGround ? 0 : 6);
+			//var to = cameraPosition;
+			//var normal = (to - from).Normalized();
 
-			// reduce distance by a bit to account for near plane cutoff
-			var distance = (to - from).Length();
-			if (distance > World.Camera.NearPlane + 1)
-				distance -= World.Camera.NearPlane;
+			//// reduce distance by a bit to account for near plane cutoff
+			//var distance = (to - from).Length();
+			//if (distance > World.Camera.NearPlane + 1)
+			//	distance -= World.Camera.NearPlane;
 
-			// inside a wall, push out
-			if (World.SolidRayCast(from, normal, distance, out var hit, false, true))
-			{
-				if ((hit.Intersections % 2) == 1)
-				{
-					snapRequested = true;
-					cameraPosition = hit.Point;
-				}
-			}
+			//// inside a wall, push out
+			//if (World.SolidRayCast(from, normal, distance, out var hit, false, true))
+			//{
+			//	if ((hit.Intersections % 2) == 1)
+			//	{
+			//		snapRequested = true;
+			//		cameraPosition = hit.Point;
+			//	}
+			//}
 
-			// push down from ceilings a bit
-			if (World.SolidRayCast(cameraPosition, Vec3.UnitZ, 5, out hit, true, true))
-			{
-				cameraPosition = hit.Point - Vec3.UnitZ * 5;
-			}
+			//// push down from ceilings a bit
+			//if (World.SolidRayCast(cameraPosition, Vec3.UnitZ, 5, out hit, true, true))
+			//{
+			//	cameraPosition = hit.Point - Vec3.UnitZ * 5;
+			//}
 		}
 	}
 

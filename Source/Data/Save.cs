@@ -54,7 +54,7 @@ public class Save
 	/// <summary>
 	/// If Fullscreen should be enabled
 	/// </summary>
-	public bool Fullscreen { get; set; } = true;
+	public bool Fullscreen { get; set; } = false;
 
 	/// <summary>
 	/// If the Vertical Z Guide should be drawn below the Player

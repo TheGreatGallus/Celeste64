@@ -145,7 +145,8 @@ public class Cutscene : Actor, IHaveUI
 
 			while (MathF.Abs(facing.Angle() - current.Angle()) > 0.05f)
 			{
-				current = Calc.AngleToVector(Calc.AngleApproach(current.Angle(), facing.Angle(), MathF.Tau * 1.5f * Time.Delta));
+				//current = Calc.AngleToVector(Calc.AngleApproach(current.Angle(), facing.Angle(), MathF.Tau * 1.5f * Time.Delta));
+				current = Calc.AngleToVector(Calc.AngleApproach(current.Angle(), facing.Angle(), 90.0f));
 				if (actor is Player player)
 					player.SetTargetFacing(current);
 				else
